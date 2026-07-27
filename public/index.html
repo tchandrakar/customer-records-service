@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customer Records - Support</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #222; }
+    h1 { font-size: 20px; }
+    input, select, button { font-size: 14px; padding: 5px; }
+    table { border-collapse: collapse; margin-top: 12px; width: 100%; }
+    th, td { border: 1px solid #bbb; padding: 6px 8px; font-size: 13px; text-align: left; }
+    th { background: #e8e8e8; }
+    tr:hover { background: #f5f5f5; cursor: pointer; }
+    #editPanel { display: none; border: 1px solid #999; padding: 14px; margin-top: 16px; max-width: 420px; background: #fafafa; }
+    #editPanel label { display: block; margin-top: 8px; font-weight: bold; font-size: 13px; }
+    #editPanel input, #editPanel select { width: 100%; box-sizing: border-box; }
+    #editPanel .row { margin-top: 12px; }
+    .muted { color: #777; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Customer Records</h1>
+  <div>
+    <input id="search" placeholder="Search name, company, or email" size="40" />
+    <button onclick="loadCustomers()">Search</button>
+    <button onclick="document.getElementById('search').value='';loadCustomers()">Clear</button>
+  </div>
+
+  <table id="grid">
+    <thead>
+      <tr>
+        <th>Name</th><th>Company</th><th>Email</th><th>Phone</th>
+        <th>Status</th><th>Account Mgr</th><th>Last Contacted</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="editPanel">
+    <strong>Edit customer</strong>
+    <span class="muted" id="editId"></span>
+    <label>Name <input id="f_name" /></label>
+    <label>Company <input id="f_company" /></label>
+    <label>Email <input id="f_email" /></label>
+    <label>Phone <input id="f_phone" /></label>
+    <label>Status
+      <select id="f_status">
+        <option value="active">active</option>
+        <option value="prospect">prospect</option>
+        <option value="churned">churned</option>
+      </select>
+    </label>
+    <div class="row">
+      <button onclick="save()">Save</button>
+      <button onclick="closePanel()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    let currentId = null;
+
+    async function loadCustomers() {
+      const q = document.getElementById('search').value.trim();
+      const res = await fetch('/api/customers' + (q ? '?q=' + encodeURIComponent(q) : ''));
+      const customers = await res.json();
+      const tbody = document.querySelector('#grid tbody');
+      tbody.innerHTML = '';
+      for (const c of customers) {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + esc(c.name) + '</td><td>' + esc(c.company) + '</td><td>' + esc(c.email) +
+          '</td><td>' + esc(c.phone) + '</td><td>' + esc(c.status) + '</td><td>' + esc(c.accountManager) +
+          '</td><td>' + esc(c.lastContacted) + '</td>';
+        tr.onclick = () => openPanel(c);
+        tbody.appendChild(tr);
+      }
+    }
+
+    function openPanel(c) {
+      currentId = c.id;
+      document.getElementById('editId').textContent = ' (#' + c.id + ')';
+      document.getElementById('f_name').value = c.name || '';
+      document.getElementById('f_company').value = c.company || '';
+      document.getElementById('f_email').value = c.email || '';
+      document.getElementById('f_phone').value = c.phone || '';
+      document.getElementById('f_status').value = c.status || 'active';
+      document.getElementById('editPanel').style.display = 'block';
+    }
+
+    function closePanel() {
+      currentId = null;
+      document.getElementById('editPanel').style.display = 'none';
+    }
+
+    async function save() {
+      const body = {
+        name: document.getElementById('f_name').value,
+        company: document.getElementById('f_company').value,
+        email: document.getElementById('f_email').value,
+        phone: document.getElementById('f_phone').value,
+        status: document.getElementById('f_status').value
+      };
+      const res = await fetch('/api/customers/' + currentId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert('Save failed: ' + (err.error || res.status));
+        return;
+      }
+      closePanel();
+      loadCustomers();
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, ch =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    loadCustomers();
+  </script>
+</body>
+</html>

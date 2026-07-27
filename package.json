@@ -1,0 +1,23 @@
+{
+  "name": "customer-records-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Customer records slice for the fictional company's support team. Migrated from the legacy system in 2021.",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "seed:reset": "tsx src/db.ts --reset",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
